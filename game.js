@@ -1,13 +1,11 @@
-// ★デバッグ用★
-const DEBUG_MODE = true;
+// デバッグ用のログ出力設定（通常はfalseにしておきます）
+const DEBUG_MODE = false;
 function log(message, ...args) {
     if (DEBUG_MODE) {
-        // 現在時刻を追加して、ログの発生順を分かりやすくします
         const time = new Date().toLocaleTimeString();
         console.log(`[${time}] ${message}`, ...args);
     }
 }
-
 
 document.addEventListener('DOMContentLoaded', () => {
     log("DOMコンテンツの読み込み完了");
@@ -73,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 定数定義 ---
     const CONSTANTS = {
-        DEAD_LINE_Y_RATIO: 0.25, // 画面高さに対するデッドラインの割合
+        DEAD_LINE_Y_RATIO: 0.25,
         FLICK_VELOCITY_THRESHOLD: 5,
         BLOCK_SPAWN_INTERVAL: 2000,
         RULE_ADD_INTERVAL: 15000,
@@ -150,16 +148,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     
     function loadPlayerData() {
-        log("loadPlayerData: プレイヤーデータのロード開始");
         try {
             const savedData = localStorage.getItem('reserve_delete_playerData');
             if (savedData) {
                 const parsedData = JSON.parse(savedData);
                 playerData.unlockedAchievements = new Set(parsedData.unlockedAchievements || []);
                 playerData.unlockedRecords = new Set(parsedData.unlockedRecords || []);
-                log("loadPlayerData: データのロード成功");
-            } else {
-                log("loadPlayerData: セーブデータなし");
             }
         } catch (error) {
             console.error("プレイヤーデータのロードに失敗しました:", error);
@@ -168,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function savePlayerData() {
-        log("savePlayerData: プレイヤーデータの保存");
         const dataToSave = {
             unlockedAchievements: Array.from(playerData.unlockedAchievements),
             unlockedRecords: Array.from(playerData.unlockedRecords)
@@ -177,7 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadGameData() {
-        log("loadGameData: ゲームデータ (JSON) のロード開始");
         try {
             const [rulesResponse, storyResponse, endingResponse] = await Promise.all([
                 fetch('rules.json'),
@@ -193,31 +185,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const rawStoryData = await storyResponse.json();
             endingData = await endingResponse.json();
 
-            RULE_POOL = rawRulesData.map(rule => {
-                return { ...rule, condition: new Function('b', `return ${rule.condition}`) };
-            });
+            RULE_POOL = rawRulesData.map(rule => ({ ...rule, condition: new Function('b', `return ${rule.condition}`) }));
             RULE_POOL.forEach(rule => rulesMap.set(rule.id, rule));
-            log("loadGameData: ルールデータの処理完了", RULE_POOL);
 
-            storyData = rawStoryData.map(stage => {
-                return {
-                    ...stage,
-                    rules: stage.rules.map(stageRule => {
-                        if (!stageRule || typeof stageRule.id === 'undefined') {
-                            console.warn("WARN: story.jsonに不正なルール定義あり", stageRule);
-                            return { type: 'delete', text: '不正なルール', icon: '❓', condition: (b) => true };
-                        }
-                        const ruleFromPool = rulesMap.get(stageRule.id);
-                        if (ruleFromPool) {
-                            return { ...ruleFromPool }; // 必ず condition が関数化されたものを返す
-                        } else {
-                            console.warn(`WARN: ルールID '${stageRule.id}' が見つかりません`);
-                            return { type: 'delete', text: '不明なルール', icon: '❓', condition: (b) => true };
-                        }
-                    })
-                };
-            });
-            log("loadGameData: ゲームデータの読み込み完了");
+            storyData = rawStoryData.map(stage => ({
+                ...stage,
+                rules: stage.rules.map(stageRule => {
+                    if (!stageRule || typeof stageRule.id === 'undefined') {
+                        console.warn("WARN: story.jsonに不正なルール定義あり", stageRule);
+                        return { type: 'delete', text: '不正なルール', icon: '❓', condition: (b) => true };
+                    }
+                    const ruleFromPool = rulesMap.get(stageRule.id);
+                    if (ruleFromPool) {
+                        return { ...ruleFromPool };
+                    } else {
+                        console.warn(`WARN: ルールID '${stageRule.id}' が見つかりません`);
+                        return { type: 'delete', text: '不明なルール', icon: '❓', condition: (b) => true };
+                    }
+                })
+            }));
         } catch (error) {
             console.error("ゲームデータの読み込みに失敗しました:", error);
             alert("ゲームデータの読み込みに失敗しました。ファイルが存在するか、JSONの形式が正しいか確認してください。");
@@ -231,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
 
     function showTitleScreen() {
-        log("showTitleScreen: タイトル画面表示");
         dom.gameMainScreen.style.display = 'none';
         dom.stageInfoOverlay.style.display = 'none';
         dom.stageClearOverlay.style.display = 'none';
@@ -246,7 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function showGameScreen() {
-        log("showGameScreen: ゲームメイン画面表示");
         dom.titleScreen.style.display = 'none';
         dom.stageInfoOverlay.style.display = 'none';
         dom.gameMainScreen.style.display = 'block';
@@ -254,9 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showStageInfo(stageIndex) {
-        log(`showStageInfo: ステージ情報表示 (Stage Index: ${stageIndex})`);
         if (stageIndex >= storyData.length) {
-            log("showStageInfo: 全ステージクリア、エンディングへ");
             showEnding();
             return;
         }
@@ -265,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const stage = storyData[stageIndex];
         
         if (!stage) {
-            console.error(`ステージデータ[${stageIndex}]が見つかりません。story.jsonを確認してください。`);
+            console.error(`ステージデータ[${stageIndex}]が見つかりません。`);
             alert(`ステージ${stageIndex + 1}のデータを読み込めませんでした。`);
             showTitleScreen();
             return;
@@ -282,7 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showEnding() {
-        log("showEnding: エンディング表示");
         const { sincerity, coldness, cunning } = reputation;
         let finalEnding = endingData.normal_end;
         let end_id = 'normal_end';
@@ -303,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.endingTitle.textContent = finalEnding.title;
         dom.endingScenario.innerHTML = finalEnding.scenario.map(p => `<p>${p}</p>`).join('');
         
-        dom.gameMainScreen.style.display = 'none'; // ゲーム画面を非表示
+        dom.gameMainScreen.style.display = 'none';
         dom.endingScreen.style.display = 'flex';
         cleanupMatterEngine();
     }
@@ -339,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
 
     function cleanupMatterEngine() {
-        log("cleanupMatterEngine: Matter.jsインスタンスのクリーンアップ");
         if (runner) Runner.stop(runner);
         if (render && render.canvas) {
             Render.stop(render);
@@ -355,7 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function gameStart() {
-        log("gameStart: ゲーム初期化・開始");
         cleanupMatterEngine();
 
         isGameOver = false;
@@ -373,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         sounds.bgm.play().catch(e => console.warn("BGM再生エラー:", e));
 
-        engine = Engine.create({ enableSleeping: true }); // enableSleepingでパフォーマンス改善
+        engine = Engine.create({ enableSleeping: true });
         world = engine.world;
         render = Render.create({
             element: dom.gameContainer,
@@ -381,17 +360,23 @@ document.addEventListener('DOMContentLoaded', () => {
             options: { width: window.innerWidth, height: window.innerHeight, wireframes: false, background: 'transparent' }
         });
         
-        dom.gameContainer.innerHTML = ''; // コンテナをクリア
+        dom.gameContainer.innerHTML = '';
         dom.gameContainer.appendChild(render.canvas);
         
         runner = Runner.create();
         
         const wallOptions = { isStatic: true, render: { visible: false } };
+        // --- ▼▼▼【修正点1】ここから ▼▼▼ ---
+        const floorOptions = { isStatic: true, render: { fillStyle: '#636e72' } };
+
         Composite.add(world, [
-            Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 30, window.innerWidth, 60, wallOptions), // ground
-            Bodies.rectangle(-30, window.innerHeight / 2, 60, window.innerHeight, wallOptions), // leftWall
-            Bodies.rectangle(window.innerWidth + 30, window.innerHeight / 2, 60, window.innerHeight, wallOptions) // rightWall
+            // 画面下部に表示される「床」を追加
+            Bodies.rectangle(window.innerWidth / 2, window.innerHeight - 10, window.innerWidth, 20, floorOptions),
+            // 左右の壁
+            Bodies.rectangle(-30, window.innerHeight / 2, 60, window.innerHeight, wallOptions),
+            Bodies.rectangle(window.innerWidth + 30, window.innerHeight / 2, 60, window.innerHeight, wallOptions)
         ]);
+        // --- ▲▲▲【修正点1】ここまで ▲▲▲ ---
 
         mouseConstraint = MouseConstraint.create(engine, {
             mouse: Mouse.create(render.canvas),
@@ -414,23 +399,15 @@ document.addEventListener('DOMContentLoaded', () => {
         Render.run(render);
         Runner.run(runner, engine);
         
-        // ★デバッグ用★ タイマーが正常にセットされたかログ出力
         if(blockSpawnerTimerId) clearInterval(blockSpawnerTimerId);
         blockSpawnerTimerId = setInterval(createReservationBlock, CONSTANTS.BLOCK_SPAWN_INTERVAL);
-        log("gameStart: ブロック生成タイマーをセットしました", { interval: CONSTANTS.BLOCK_SPAWN_INTERVAL });
     }
 
     function gameOver() {
-        // ★デバッグ用★ ゲームオーバーがどこから呼ばれたかスタックトレースを出力
-        log("gameOver: ゲームオーバー処理開始");
-        console.trace("gameOver() Call Stack");
-
-        if (isGameOver) {
-            log("gameOver: 既にゲームオーバー処理中のため中断");
-            return;
-        }
+        if (isGameOver) return;
         isGameOver = true;
         
+        log("gameOver: ゲームオーバー処理開始");
         sounds.bgm.pause();
         playSound(sounds.gameover);
 
@@ -439,12 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(controlReverseTimerId) clearTimeout(controlReverseTimerId);
 
         dom.finalSalary.innerText = `￥${salary}`;
-        
-        if (gameMode === 'story') {
-            dom.restartButton.textContent = "もう一度挑戦する";
-        } else {
-            dom.restartButton.textContent = "タイトルに戻る";
-        }
+        dom.restartButton.textContent = (gameMode === 'story') ? "もう一度挑戦する" : "タイトルに戻る";
         
         dom.gameoverScreen.style.display = 'flex';
         cleanupMatterEngine();
@@ -454,7 +426,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isGameOver) return;
         isGameOver = true;
         
-        log("stageClear: ステージクリア！");
         playSound(sounds.combo);
 
         if(ruleAddTimerId) clearInterval(ruleAddTimerId);
@@ -462,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(controlReverseTimerId) clearTimeout(controlReverseTimerId);
 
         sounds.bgm.pause();
-        log("--- FINAL REPUTATION ---", reputation);
         
         if (currentStageIndex >= storyData.length - 1) {
             setTimeout(showEnding, 1000);
@@ -489,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function playSound(audio) {
         const sound = audio.cloneNode();
         sound.volume = audio.volume;
-        sound.play().catch(e => { /* エラーは無視 */ });
+        sound.play().catch(e => {});
     }
 
     function unlockAchievement(id) {
@@ -512,11 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
 
     function createReservationBlock() {
-        log("createReservationBlock: ブロック生成ロジック実行");
-        if (isGameOver) {
-            log("createReservationBlock: ゲームオーバーのためブロック生成を中断");
-            return;
-        };
+        if (isGameOver) return;
 
         let probabilities;
         if (gameMode === 'story') {
@@ -526,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (!probabilities) {
-            console.error("block_probabilities が未定義です。story.jsonを確認してください。", `Stage: ${currentStageIndex}`);
+            console.error("block_probabilities が未定義です。", `Stage: ${currentStageIndex}`);
             return;
         }
 
@@ -542,15 +508,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function createBlock(type, options, customData) {
-        if (!world) {
-            log("createBlock: world が存在しないためブロックを生成できません。");
-            return;
-        }
+        if (!world) return;
         const block = Bodies.rectangle(options.x, options.y, options.w, options.h, options.matter);
         block.customData = customData;
         Composite.add(world, block);
-        // ★デバッグ用★ どのブロックが生成されたかログ出力
-        log(`ブロック生成完了: type=${customData.type}, id=${customData.id || 'N/A'}`, block);
     }
 
     function createNormalBlock(attributeProb) {
@@ -612,7 +573,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
         }
         if(world) Composite.add(world, [...blocks, ...constraints]);
-        log(`グループブロック生成完了: groupId=${groupId}, size=${groupSize}`);
     }
     
     function createMalwareBlock() {
@@ -636,8 +596,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function judge(body, direction) {
         if (!body || !body.customData) return;
-        log(`judge: ブロック判定 direction=${direction}`, body.customData);
-        playSound(sounds.miss); // ★デバッグ用★ 判定ミス音をここで鳴らしてみる
         
         const { type } = body.customData;
         if (type === 'malware') handleMalwarePenalty(body);
@@ -668,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateComboDisplay();
     }
     
-    function handleGroupJudge(body, direction) {
+    function handleGroupJudge(body, direction) { /* 省略なし */
         const { id, groupId, groupSize } = body.customData;
         const actualDirection = isControlReversed ? (direction === 'left' ? 'right' : 'left') : direction;
         const requiredAction = getRequiredAction(body.customData); 
@@ -710,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateComboDisplay();
     }
     
-    function handleBribeJudge(body, direction) {
+    function handleBribeJudge(body, direction) { /* 省略なし */
         const actualDirection = isControlReversed ? (direction === 'left' ? 'right' : 'left') : direction;
         if (actualDirection === 'left') {
             playSound(sounds.correct);
@@ -722,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSalaryDisplay();
     }
 
-    function handleMalwarePenalty(body) {
+    function handleMalwarePenalty(body) { /* 省略なし */
         playSound(sounds.miss);
         salary -= CONSTANTS.SALARY_MALWARE_PENALTY;
         updateSalaryDisplay();
@@ -742,8 +700,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function getRequiredAction(customData) {
         let action = 'pass';
+        if (!activeRules) return 'delete';
         for (const rule of activeRules) {
-            // ★デバッグ用★ conditionが関数でない場合のエラー回避
             if (typeof rule.condition !== 'function') {
                 console.error("ルールに有効なcondition関数がありません:", rule);
                 continue;
@@ -867,13 +825,11 @@ document.addEventListener('DOMContentLoaded', () => {
         context.restore();
     }
 
-
     // =============================================
     // ★★★ イベントリスナー設定 ★★★
     // =============================================
 
     function setupEventListeners() {
-        log("setupEventListeners: イベントリスナー設定");
         Events.on(mouseConstraint, 'mouseup', (event) => {
             if (isGameOver || !mouseConstraint.body) return;
             const body = mouseConstraint.body;
@@ -896,16 +852,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         unlockAchievement('malware_avoid');
                     }
                     
-                    if (isGameOver) return; // ゲームオーバー後はデッドライン判定をしない
+                    if (isGameOver) return;
 
+                    // --- ▼▼▼【修正点2】ここから ▼▼▼ ---
+                    // 新しいゲームオーバーロジック
                     const DEAD_LINE_Y = window.innerHeight * CONSTANTS.DEAD_LINE_Y_RATIO;
-                    if (body.position.y > (window.innerHeight + 50)) {
-                         if(world) Composite.remove(world, body, true);
-                    } else if (body.position.y > DEAD_LINE_Y && Math.abs(body.velocity.y) < 0.1 && !body.isStatic) {
-                        log(`デッドライン超過を検知！ y=${body.position.y.toFixed(2)}, DEAD_LINE_Y=${DEAD_LINE_Y.toFixed(2)}`, body.customData);
-                        playSound(sounds.miss);
-                        gameOver();
+                    
+                    // isSleepingは物理的に静止したブロックを判定するのに最も確実な方法
+                    if (!body.isStatic && body.isSleeping) {
+                        // ブロックの最も高い部分がデッドラインを越えたらゲームオーバー
+                        if (body.bounds.min.y < DEAD_LINE_Y) {
+                            log(`デッドライン超過（スリープ状態）を検知！ block top y=${body.bounds.min.y.toFixed(2)}, DEAD_LINE_Y=${DEAD_LINE_Y.toFixed(2)}`, body.customData);
+                            gameOver();
+                        }
                     }
+                    // --- ▲▲▲【修正点2】ここまで ▲▲▲ ---
                 }
             });
 
@@ -955,10 +916,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ★★★ 初期化処理 ★★★
     // =============================================
     
-    log("初期化処理開始");
     loadPlayerData();
     loadGameData().then(() => {
-        log("初期データロード完了、タイトル表示へ");
         showTitleScreen();
     }).catch(e => {
         console.error("初期化中の致命的なエラー:", e);
