@@ -365,18 +365,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         runner = Runner.create();
         
-        const wallOptions = { isStatic: true, render: { visible: false } };
-        // --- ▼▼▼【修正点1】ここから ▼▼▼ ---
         const floorOptions = { isStatic: true, render: { fillStyle: '#636e72' } };
-
+        const wallOptions = { isStatic: true, render: { visible: false } };
         Composite.add(world, [
-            // 画面下部に表示される「床」を追加
             Bodies.rectangle(window.innerWidth / 2, window.innerHeight - 10, window.innerWidth, 20, floorOptions),
-            // 左右の壁
             Bodies.rectangle(-30, window.innerHeight / 2, 60, window.innerHeight, wallOptions),
             Bodies.rectangle(window.innerWidth + 30, window.innerHeight / 2, 60, window.innerHeight, wallOptions)
         ]);
-        // --- ▲▲▲【修正点1】ここまで ▲▲▲ ---
 
         mouseConstraint = MouseConstraint.create(engine, {
             mouse: Mouse.create(render.canvas),
@@ -384,16 +379,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         Composite.add(world, mouseConstraint);
 
+        // --- ▼▼▼【修正点1】ここから ▼▼▼ ---
+        // ルール設定のロジックをここに集約し、明確化
         if (gameMode === 'story') {
             const stage = storyData[currentStageIndex];
-            activeRules = stage.rules;
+            activeRules = stage.rules; // 現在のステージのルールを activeRules に設定
             currentClearCondition = stage.clear_condition;
-        } else {
+        } else { // Endless Mode
             activeRules = [];
-            addNewRule();
+            addNewRule(); // 最初のルールを追加
             ruleAddTimerId = setInterval(addNewRule, CONSTANTS.RULE_ADD_INTERVAL);
         }
-        updateRuleDisplay();
+        
+        // UIを更新する関数を、ルール設定の直後に呼び出す
+        updateRuleDisplay(); 
+        // --- ▲▲▲【修正点1】ここまで ▲▲▲ ---
 
         setupEventListeners();
         Render.run(render);
@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateComboDisplay();
     }
     
-    function handleGroupJudge(body, direction) { /* 省略なし */
+    function handleGroupJudge(body, direction) {
         const { id, groupId, groupSize } = body.customData;
         const actualDirection = isControlReversed ? (direction === 'left' ? 'right' : 'left') : direction;
         const requiredAction = getRequiredAction(body.customData); 
@@ -668,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateComboDisplay();
     }
     
-    function handleBribeJudge(body, direction) { /* 省略なし */
+    function handleBribeJudge(body, direction) {
         const actualDirection = isControlReversed ? (direction === 'left' ? 'right' : 'left') : direction;
         if (actualDirection === 'left') {
             playSound(sounds.correct);
@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSalaryDisplay();
     }
 
-    function handleMalwarePenalty(body) { /* 省略なし */
+    function handleMalwarePenalty(body) {
         playSound(sounds.miss);
         salary -= CONSTANTS.SALARY_MALWARE_PENALTY;
         updateSalaryDisplay();
@@ -698,21 +698,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (world) Composite.remove(world, body);
     }
     
+    // --- ▼▼▼【修正点2】ここから ▼▼▼ ---
+    /**
+     * ブロックのカスタムデータに基づいて必要なアクション (承認/破棄) を決定する。
+     * この関数は、現在有効なルール(activeRules)のみをチェックする。
+     * @param {object} customData - ブロックのカスタムデータ。
+     * @returns {'approve'|'delete'} - 必要なアクション。
+     */
     function getRequiredAction(customData) {
-        let action = 'pass';
-        if (!activeRules) return 'delete';
+        // activeRules（画面に表示されているルール）をループして、条件に一致するかをチェック
         for (const rule of activeRules) {
-            if (typeof rule.condition !== 'function') {
-                console.error("ルールに有効なcondition関数がありません:", rule);
-                continue;
-            }
             if (rule.condition(customData)) {
-                action = rule.type;
-                break;
+                return rule.type; // 条件に一致した最初のルールのアクションを返す
             }
         }
-        return (action === 'pass') ? 'delete' : action;
+        // どのルールにも一致しないブロックは、デフォルトで「破棄」
+        return 'delete';
     }
+    // --- ▲▲▲【修正点2】ここまで ▲▲▲ ---
 
     function updateSalaryDisplay() {
         dom.salaryValue.innerText = `￥${salary}`;
@@ -732,25 +735,36 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function addNewRule() {
         if (isGameOver || RULE_POOL.length === 0) return;
-        const availableRules = RULE_POOL.filter(rule => !activeRules.includes(rule));
+        const availableRules = RULE_POOL.filter(rule => !activeRules.some(ar => ar.id === rule.id));
         if (availableRules.length > 0) {
             const newRule = availableRules[Math.floor(Math.random() * availableRules.length)];
             activeRules.push(newRule);
-            updateRuleDisplay();
+            updateRuleDisplay(); // 新しいルールが追加されたらUIを更新
         }
     }
 
+    // --- ▼▼▼【修正点3】ここから ▼▼▼ ---
+    /**
+     * ルール表示を更新する。
+     * この関数は、現在有効なルール(activeRules)のみを画面に描画する。
+     */
     function updateRuleDisplay() {
         dom.approveList.innerHTML = '';
         dom.deleteList.innerHTML = '';
-        if (!activeRules) return;
+        
+        if (!activeRules) return; // activeRulesがなければ何もしない
+
         activeRules.forEach(rule => {
             const li = document.createElement('li');
             li.textContent = `${rule.icon || '・'} ${rule.text}`;
-            if (rule.type === 'approve') dom.approveList.appendChild(li);
-            else dom.deleteList.appendChild(li);
+            if (rule.type === 'approve') {
+                dom.approveList.appendChild(li);
+            } else {
+                dom.deleteList.appendChild(li);
+            }
         });
     }
+    // --- ▲▲▲【修正点3】ここまで ▲▲▲ ---
     
     function drawBlockText(context, body) {
         context.save();
@@ -825,6 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
         context.restore();
     }
 
+
     // =============================================
     // ★★★ イベントリスナー設定 ★★★
     // =============================================
@@ -854,19 +869,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if (isGameOver) return;
 
-                    // --- ▼▼▼【修正点2】ここから ▼▼▼ ---
-                    // 新しいゲームオーバーロジック
                     const DEAD_LINE_Y = window.innerHeight * CONSTANTS.DEAD_LINE_Y_RATIO;
-                    
-                    // isSleepingは物理的に静止したブロックを判定するのに最も確実な方法
                     if (!body.isStatic && body.isSleeping) {
-                        // ブロックの最も高い部分がデッドラインを越えたらゲームオーバー
                         if (body.bounds.min.y < DEAD_LINE_Y) {
-                            log(`デッドライン超過（スリープ状態）を検知！ block top y=${body.bounds.min.y.toFixed(2)}, DEAD_LINE_Y=${DEAD_LINE_Y.toFixed(2)}`, body.customData);
+                            log(`デッドライン超過（スリープ状態）を検知！`, body.customData);
                             gameOver();
                         }
                     }
-                    // --- ▲▲▲【修正点2】ここまで ▲▲▲ ---
                 }
             });
 
