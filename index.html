@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESERVE or DELETE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="title-screen">
+        <h1>RESERVE or DELETE</h1>
+        <p>リザーブ・オア・デリート</p>
+        <div class="mode-select">
+            <button id="story-mode-button" class="mode-button">STORY MODE</button>
+            <button id="endless-mode-button" class="mode-button">ENDLESS MODE</button>
+        </div>
+        <button id="collection-button" class="sub-button">実績・記録庫</button>
+    </div>
+
+    <div id="game-main-screen" style="display: none;">
+        <header id="header-area">
+            <div class="rule-container">
+                <div id="approve-rules" class="rule-box">
+                    <h3>[承認 / APPROVE]</h3>
+                    <ul id="approve-list"></ul>
+                </div>
+                <div id="delete-rules" class="rule-box">
+                    <h3>[破棄 / DELETE]</h3>
+                    <ul id="delete-list"></ul>
+                </div>
+            </div>
+            <div id="salary-container">
+                <p>給料 (SALARY): <span id="salary-value">￥0</span></p>
+            </div>
+        </header>
+
+        <main id="game-container"></main>
+        
+        <div id="dead-line">DEAD LINE</div>
+
+        <div id="combo-display" style="opacity: 0;">
+            <div id="combo-count" class="combo-count">0</div>
+            <div class="combo-label">COMBO</div>
+        </div>
+        <div id="control-reverse-indicator"></div>
+    </div>
+
+    <div id="stage-info-overlay" class="overlay">
+        <div class="overlay-content">
+            <h2 id="stage-title"></h2>
+            <div id="stage-scenario"></div>
+            <p><b>クリア条件:</b> <span id="stage-clear-condition"></span></p>
+            <button id="stage-start-button">業務開始</button>
+        </div>
+    </div>
+
+    <div id="stage-clear-overlay" class="overlay">
+        <div class="overlay-content">
+            <h2>STAGE CLEAR!</h2>
+            <div id="clear-scenario"></div>
+            <div id="debug-reputation" style="margin-top: 15px; font-size: 0.8em; color: #95a5a6;"></div>
+            <button id="next-stage-button">次のステージへ</button>
+        </div>
+    </div>
+
+    <div id="gameover-screen" class="overlay">
+        <div class="overlay-content">
+            <h1>GAME OVER</h1>
+            <p>最終給料 (Final Salary): <span id="final-salary">￥0</span></p>
+            <button id="restart-button">タイトルに戻る (BACK TO TITLE)</button>
+        </div>
+    </div>
+    
+    <div id="ending-screen" class="overlay">
+        <div class="overlay-content">
+            <h2 id="ending-title"></h2>
+            <div id="ending-scenario"></div>
+            <p style="margin-top: 40px;">- FIN -</p>
+            <button id="back-to-title-button">タイトルへ</button>
+        </div>
+    </div>
+
+    <div id="collection-screen" class="overlay">
+        <div class="overlay-content">
+            <h2>実績・記録庫</h2>
+            <div class="collection-container">
+                <div class="collection-section">
+                    <h3>実績 (Achievements)</h3>
+                    <ul id="achievements-list"></ul>
+                </div>
+                <div class="collection-section">
+                    <h3>記録 (Records)</h3>
+                    <ul id="records-list"></ul>
+                </div>
+            </div>
+            <button id="collection-back-button">タイトルへ戻る</button>
+        </div>
+    </div>
+    
+    <div id="achievement-toast">
+        <div id="toast-icon">🏆</div>
+        <div id="toast-text"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
