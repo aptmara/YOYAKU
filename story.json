@@ -9,8 +9,8 @@
     ],
     "clear_condition": { "type": "salary", "value": 1000 },
     "rules": [
-      { "type": "approve", "text": "IDが偶数", "icon": "🔢", "condition": "b.id % 2 === 0" },
-      { "type": "delete",  "text": "IDが奇数", "icon": "🔢", "condition": "b.id % 2 !== 0" }
+      { "type": "approve", "text": "IDが偶数", "icon": "🔢" },
+      { "type": "delete",  "text": "IDが奇数", "icon": "🔢" }
     ],
     "block_probabilities": {
       "vip": 0, "hidden": 0, "group": 0, "malware": 0, "bribe": 0, "attribute": 0.1
@@ -32,8 +32,8 @@
     ],
     "clear_condition": { "type": "salary", "value": 3000 },
     "rules": [
-      { "type": "approve", "text": "VIP客 (👑)", "icon": "👑", "condition": "b.type === 'vip'" },
-      { "type": "approve", "text": "IDが偶数", "icon": "🔢", "condition": "b.id % 2 === 0" }
+      { "type": "approve", "text": "VIP客 (👑)", "icon": "👑" },
+      { "type": "approve", "text": "IDが偶数", "icon": "🔢" }
     ],
     "block_probabilities": {
       "vip": 0.2, "hidden": 0, "group": 0, "malware": 0, "bribe": 0.1, "attribute": 0.2
@@ -63,9 +63,9 @@
     ],
     "clear_condition": { "type": "salary", "value": 5000 },
     "rules": [
-        { "type": "approve", "text": "VIP客 (👑)", "icon": "👑", "condition": "b.type === 'vip'" },
-        { "type": "delete", "text": "隠蔽ブロック(???)は破棄", "icon": "❓", "condition": "b.type === 'hidden'"},
-        { "type": "approve", "text": "IDが100以上", "icon": "🔼", "condition": "b.id >= 100" }
+        { "type": "approve", "text": "VIP客 (👑)", "icon": "👑" },
+        { "type": "delete", "text": "隠蔽ブロック (❓)", "icon": "❓"},
+        { "type": "approve", "text": "IDが100以上", "icon": "🔼" }
     ],
     "block_probabilities": {
       "vip": 0.15, "hidden": 0.2, "group": 0.1, "malware": 0.05, "bribe": 0.1, "attribute": 0.3
