@@ -176,55 +176,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch('story.json'),
                 fetch('endings.json')
             ]);
-            
+
             const rawRulesData = await rulesResponse.json();
-            const rawStoryData = await storyResponse.json();
-            endingData = await endingResponse.json();
-            
+            const rawStoryData = await await storyResponse.json(); //
+            endingData = await endingResponse.json(); //
+
             // RULE_POOLとrulesMapを構築
-            RULE_POOL = rawRulesData.map(rule => {
+            RULE_POOL = rawRulesData.map(rule => { //
                 // condition文字列をFunctionに変換 (信頼できるソースからのみ使用)
-                return { ...rule, condition: new Function('b', `return ${rule.condition}`) };
+                return { ...rule, condition: new Function('b', `return ${rule.condition}`) }; //
             });
-            RULE_POOL.forEach(rule => {
-                rulesMap.set(rule.id, rule);
+            RULE_POOL.forEach(rule => { //
+                rulesMap.set(rule.id, rule); //
             });
 
             // storyDataを処理し、rules.jsonから対応するルールを割り当てる
-            storyData = rawStoryData.map(stage => {
+            storyData = rawStoryData.map(stage => { //
                 return {
                     ...stage,
-                    rules: stage.rules.map(stageRule => {
-                        const ruleFromPool = rulesMap.get(stageRule.id);
-                        if (ruleFromPool) {
+                    rules: stage.rules.map(stageRule => { //
+                        // ★修正箇所★ ここから追加
+                        if (!stageRule || typeof stageRule.id === 'undefined') {
+                            console.warn("WARN: story.json内のルール定義に不正なエントリが見つかりました（IDがundefinedまたは欠落）。");
+                            return { type: 'delete', text: '不正なルール', icon: '❓', condition: (b) => true }; // フォールバック
+                        }
+                        // ★修正箇所★ ここまで追加
+
+                        const ruleFromPool = rulesMap.get(stageRule.id); //
+                        if (ruleFromPool) { //
                             // rules.jsonから見つかったルールの詳細を使用
-                            return { 
+                            return {
                                 type: ruleFromPool.type,
                                 text: ruleFromPool.text,
                                 icon: ruleFromPool.icon,
                                 condition: ruleFromPool.condition // 関数化されたcondition
                             };
                         } else {
-                            console.warn(`WARN: story.json内のルールID '${stageRule.id}' に対応するルールがrules.jsonに見つかりませんでした。`);
+                            console.warn(`WARN: story.json内のルールID '${stageRule.id}' に対応するルールがrules.jsonに見つかりませんでした。`); //
                             return { type: 'delete', text: '不明なルール', icon: '❓', condition: (b) => true }; // フォールバック
                         }
                     })
                 };
             });
-            console.log("ゲームデータの読み込みが完了しました。");
+            console.log("ゲームデータの読み込みが完了しました。"); //
         } catch (error) {
-            console.error("ゲームデータの読み込みに失敗しました:", error);
+            console.error("ゲームデータの読み込みに失敗しました:", error); //
             // エラー発生時のフォールバック処理
-            RULE_POOL = [];
-            storyData = [];
-            endingData = { normal_end: { title: "エラー", scenario: ["データの読み込みに失敗しました。"] } };
+            RULE_POOL = []; //
+            storyData = []; //
+            endingData = { normal_end: { title: "エラー", scenario: ["データの読み込みに失敗しました。"] } }; //
         }
     }
-
-    // (以降の game.js の内容は省略。前回の完全なコードと同じです)
-    // ここから下は前回の完全なgame.jsのコードと同じ内容が続きます。
-    // showTitleScreen() から始まるすべての関数を含みます。
-
+    
     // =============================================
     // ★★★ UI/画面遷移関数 ★★★
     // =============================================
