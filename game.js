@@ -1098,7 +1098,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // 毎フレームごとのレンダリング後イベント
-        Events.on(render, 'afterRender', () => {
+   Events.on(render, 'afterRender', () => {
             if (isGameOver) return;
             const context = render.context;
             
@@ -1116,9 +1116,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // デッドラインを超えたブロックのゲームオーバー判定
-                    // 重力で落ちていくブロックがデッドラインを超えて静止した場合にゲームオーバー
                     const DEAD_LINE_Y = window.innerHeight * CONSTANTS.DEAD_LINE_Y_RATIO;
-                    if (body.position.y < DEAD_LINE_Y && body.velocity.y < 0.1 && body.isStatic === false) {
+                    // 【修正点】
+                    // 判定条件を `body.position.y < DEAD_LINE_Y` から `body.position.y > DEAD_LINE_Y` に変更。
+                    // Matter.jsの座標系ではY軸は下向きが正のため、これにより「ブロックがデッドラインより下に到達した」
+                    // という正しい条件になります。
+                    // さらに、`body.velocity.y` の絶対値を見ることで、跳ね返りなどで一瞬デッドラインを越えただけでは
+                    // ゲームオーバーにならないように、より安定した判定にしています。
+                    if (body.position.y > DEAD_LINE_Y && Math.abs(body.velocity.y) < 0.1 && body.isStatic === false) {
                         gameOver();
                     }
                 }
