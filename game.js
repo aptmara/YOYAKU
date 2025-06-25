@@ -237,43 +237,33 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * タイトル画面を表示する。
      */
+    /**
+     * タイトル画面を表示する。
+     */
     function showTitleScreen() {
-        Object.values(dom).forEach(el => {
-            if (el && el.style) el.style.display = 'none';
-        });
-        dom.titleScreen.style.display = 'flex';
-        sounds.bgm.pause();
-        if(sounds.bgm.currentTime > 0) sounds.bgm.currentTime = 0;
+        // 全てのゲーム関連画面を非表示にする
+        // これにより、初期化時に他の画面要素が誤って表示されることを防ぎます。
+        dom.gameMainScreen.style.display = 'none';
+        dom.stageInfoOverlay.style.display = 'none';
+        dom.stageClearOverlay.style.display = 'none';
+        dom.gameoverScreen.style.display = 'none';
+        dom.endingScreen.style.display = 'none';
+        dom.collectionScreen.style.display = 'none';
+        dom.achievementToast.style.display = 'none'; // トーストも非表示に
+
+        // タイトル画面コンテナを表示
+        dom.titleScreen.style.display = 'flex'; //
+
+        // タイトル画面内のボタンを表示
+        // style.cssの定義に従い、必要に応じてdisplayプロパティを設定します。
+        // .mode-buttonは通常inline-block、.sub-buttonはblockが適しています。
+        dom.storyModeButton.style.display = 'inline-block';
+        dom.endlessModeButton.style.display = 'inline-block';
+        dom.collectionButton.style.display = 'block';
+
+        sounds.bgm.pause(); //
+        if(sounds.bgm.currentTime > 0) sounds.bgm.currentTime = 0; //
         cleanupMatterEngine(); // Matter.jsインスタンスをクリーンアップ
-    }
-
-    /**
-     * ゲームメイン画面を表示し、ゲームを開始する。
-     */
-    function showGameScreen() {
-        Object.values(dom).forEach(el => {
-            if (el && el.style) el.style.display = 'none';
-        });
-        dom.gameMainScreen.style.display = 'block';
-        gameStart();
-    }
-
-    /**
-     * ステージ情報オーバーレイを表示する。
-     * @param {number} stageIndex - 表示するステージのインデックス。
-     */
-    function showStageInfo(stageIndex) {
-        const stage = storyData[stageIndex];
-        if (!stage) {
-            // 全ステージクリア時の処理
-            showEnding();
-            return;
-        }
-        currentStageIndex = stageIndex;
-        dom.stageTitle.textContent = `STAGE ${stage.stage}: ${stage.title}`;
-        dom.stageScenario.innerHTML = stage.scenario_pre.map(p => `<p>${p}</p>`).join('');
-        dom.stageClearCondition.textContent = `${stage.clear_condition.value}円の給料を稼ぐ`;
-        dom.stageInfoOverlay.style.display = 'flex';
     }
 
     /**
