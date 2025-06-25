@@ -265,6 +265,36 @@ document.addEventListener('DOMContentLoaded', () => {
         if(sounds.bgm.currentTime > 0) sounds.bgm.currentTime = 0; //
         cleanupMatterEngine(); // Matter.jsインスタンスをクリーンアップ
     }
+    
+        /**
+     * ゲームメイン画面を表示し、ゲームを開始する。
+     */
+    function showGameScreen() {
+        Object.values(dom).forEach(el => {
+            if (el && el.style) el.style.display = 'none';
+        });
+        dom.gameMainScreen.style.display = 'block';
+        gameStart();
+    }
+
+    /**
+     * ステージ情報オーバーレイを表示する。
+     * @param {number} stageIndex - 表示するステージのインデックス。
+     */
+    function showStageInfo(stageIndex) {
+        const stage = storyData[stageIndex];
+        if (!stage) {
+            // 全ステージクリア時の処理
+            showEnding();
+            return;
+        }
+        currentStageIndex = stageIndex;
+        dom.stageTitle.textContent = `STAGE ${stage.stage}: ${stage.title}`;
+        dom.stageScenario.innerHTML = stage.scenario_pre.map(p => `<p>${p}</p>`).join('');
+        dom.stageClearCondition.textContent = `${stage.clear_condition.value}円の給料を稼ぐ`;
+        dom.stageInfoOverlay.style.display = 'flex';
+    }
+    
 
     /**
      * エンディング画面を表示する。
