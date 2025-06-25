@@ -87,20 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
         caution: { icon: '⚠️', text: '要注意', color: '#a29bfe' }
     };
 
-    const RULE_POOL = [
-        { type: 'approve', text: 'IDが100以上', icon: '🔼', condition: (b) => b.id >= 100 },
-        { type: 'delete',  text: 'IDが50未満', icon: '🔽', condition: (b) => b.id < 50 },
-        { type: 'approve', text: 'IDの末尾が「7」', icon: '7️⃣', condition: (b) => b.id % 10 === 7 },
-        { type: 'delete',  text: 'IDが3の倍数', icon: '3️⃣', condition: (b) => b.id % 3 === 0 },
-        { type: 'approve', text: 'VIP客 (👑)', icon: '👑', condition: (b) => b.type === 'vip' },
-        { type: 'delete',  text: '隠蔽ブロック (❓)', icon: '❓', condition: (b) => b.type === 'hidden' },
-        { type: 'approve', text: 'グループ客 (🔗)', icon: '🔗', condition: (b) => b.type === 'group' },
-        { type: 'approve', text: `${ATTRIBUTES.urgent.icon} 緊急属性`, icon: '🔥', condition: (b) => b.attribute === 'urgent' },
-        { type: 'approve', text: `${ATTRIBUTES.important.icon} 重要属性`, icon: '⭐', condition: (b) => b.attribute === 'important' },
-        { type: 'delete',  text: `${ATTRIBUTES.caution.icon} 要注意属性`, icon: '⚠️', condition: (b) => b.attribute === 'caution' },
-        { type: 'delete', text: 'IDが奇数で、かつ 🔥緊急', icon: '🔥', condition: (b) => b.id % 2 !== 0 && b.attribute === 'urgent' },
-        { type: 'approve', text: 'ID150以上で、かつ ⭐重要', icon: '⭐', condition: (b) => b.id >= 150 && b.attribute === 'important' },
-    ];
+    // RULE_POOLは外部ファイルから読み込むため、ここでは定義しない
+    let RULE_POOL = []; // ロード後にルールが格納される
 
     const ACHIEVEMENTS = {
         first_job: { title: "初仕事", desc: "最初の給料を受け取る" },
@@ -137,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStageIndex, gameMode, currentClearCondition, activeRules;
     let isControlReversed;
     let isGameOver;
+    let rulesMap = new Map(); // ルールIDからルールオブジェクトへのマッピング
 
     // --- プレイヤーデータ ---
     let playerData = {
@@ -177,33 +166,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * ゲームデータ (ストーリーとエンディング) をロードする。
+     * ゲームデータ (ルール、ストーリー、エンディング) をロードする。
      */
     async function loadGameData() {
         try {
-            const [storyResponse, endingResponse] = await Promise.all([
+            // rules.jsonを最初に読み込む
+            const [rulesResponse, storyResponse, endingResponse] = await Promise.all([
+                fetch('rules.json'),
                 fetch('story.json'),
                 fetch('endings.json')
             ]);
+            
+            const rawRulesData = await rulesResponse.json();
             const rawStoryData = await storyResponse.json();
             endingData = await endingResponse.json();
             
-            // storyDataを処理し、RULE_POOLから対応する関数を持つルールを割り当てる
+            // RULE_POOLとrulesMapを構築
+            RULE_POOL = rawRulesData.map(rule => {
+                // condition文字列をFunctionに変換 (信頼できるソースからのみ使用)
+                return { ...rule, condition: new Function('b', `return ${rule.condition}`) };
+            });
+            RULE_POOL.forEach(rule => {
+                rulesMap.set(rule.id, rule);
+            });
+
+            // storyDataを処理し、rules.jsonから対応するルールを割り当てる
             storyData = rawStoryData.map(stage => {
                 return {
                     ...stage,
                     rules: stage.rules.map(stageRule => {
-                        // RULE_POOLからstageRuleのtypeとtextに一致するルールを探す
-                        const matchedRule = RULE_POOL.find(poolRule => 
-                            poolRule.type === stageRule.type && poolRule.text === stageRule.text
-                        );
-                        if (matchedRule) {
-                            // RULE_POOLから見つかったルールのcondition関数を使用
-                            return { ...stageRule, condition: matchedRule.condition };
+                        const ruleFromPool = rulesMap.get(stageRule.id);
+                        if (ruleFromPool) {
+                            // rules.jsonから見つかったルールの詳細を使用
+                            return { 
+                                type: ruleFromPool.type,
+                                text: ruleFromPool.text,
+                                icon: ruleFromPool.icon,
+                                condition: ruleFromPool.condition // 関数化されたcondition
+                            };
                         } else {
-                            console.warn(`WARN: story.json内のルール '${stageRule.text}' に一致するルールがRULE_POOLに見つかりませんでした。`);
-                            // 見つからない場合は、常にfalseを返す無効なルールとして扱う
-                            return { ...stageRule, condition: (b) => false };
+                            console.warn(`WARN: story.json内のルールID '${stageRule.id}' に対応するルールがrules.jsonに見つかりませんでした。`);
+                            return { type: 'delete', text: '不明なルール', icon: '❓', condition: (b) => true }; // フォールバック
                         }
                     })
                 };
@@ -211,14 +214,22 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("ゲームデータの読み込みが完了しました。");
         } catch (error) {
             console.error("ゲームデータの読み込みに失敗しました:", error);
+            // エラー発生時のフォールバック処理
+            RULE_POOL = [];
             storyData = [];
             endingData = { normal_end: { title: "エラー", scenario: ["データの読み込みに失敗しました。"] } };
         }
     }
 
+    // (以降の game.js の内容は省略。前回の完全なコードと同じです)
+    // ここから下は前回の完全なgame.jsのコードと同じ内容が続きます。
+    // showTitleScreen() から始まるすべての関数を含みます。
+
     // =============================================
     // ★★★ UI/画面遷移関数 ★★★
     // =============================================
+    // showTitleScreen, showGameScreen, showStageInfo, showEnding,
+    // updateCollectionView, showAchievementToast ... (前回の game.js と同じ)
 
     /**
      * タイトル画面を表示する。
@@ -357,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (mouseConstraint) {
             // mouseConstraintがworldに追加されている場合のみ削除
-            if (world && mouseConstraint.body) { // bodyが存在するかチェック
+            if (world && mouseConstraint.body) {
                 Composite.remove(world, mouseConstraint); 
             }
             mouseConstraint = null;
@@ -887,7 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function getRequiredAction(customData) {
         let action = 'pass';
-        let rulesToCheck = (gameMode === 'endless') ? activeRules : storyData[currentStageIndex].rules;
+        let rulesToCheck = (gameMode === 'endless') ? RULE_POOL : storyData[currentStageIndex].rules; // RULE_POOLを使う
         for (const rule of rulesToCheck) {
             if (rule.condition(customData)) { // rule.conditionは関数として定義されている
                 action = rule.type;
@@ -924,6 +935,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function addNewRule() {
         if (isGameOver || RULE_POOL.length === 0) return;
+        // RULE_POOLからまだactiveRulesに含まれていないルールをランダムに選択
         const availableRules = RULE_POOL.filter(rule => !activeRules.includes(rule));
         if (availableRules.length === 0) {
             console.warn("全てのルールが既に追加されています。");

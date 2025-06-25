@@ -1,0 +1,16 @@
+[
+  { "id": "rule_even_id",      "type": "approve", "text": "IDが偶数", "icon": "🔢", "condition": "b.id % 2 === 0" },
+  { "id": "rule_odd_id",       "type": "delete",  "text": "IDが奇数", "icon": "🔢", "condition": "b.id % 2 !== 0" },
+  { "id": "rule_id_over_100",  "type": "approve", "text": "IDが100以上", "icon": "🔼", "condition": "b.id >= 100" },
+  { "id": "rule_id_under_50",  "type": "delete",  "text": "IDが50未満", "icon": "🔽", "condition": "b.id < 50" },
+  { "id": "rule_id_ends_7",    "type": "approve", "text": "IDの末尾が「7」", "icon": "7️⃣", "condition": "b.id % 10 === 7" },
+  { "id": "rule_id_multiple_3","type": "delete",  "text": "IDが3の倍数", "icon": "3️⃣", "condition": "b.id % 3 === 0" },
+  { "id": "rule_vip",          "type": "approve", "text": "VIP客 (👑)", "icon": "👑", "condition": "b.type === 'vip'" },
+  { "id": "rule_hidden",       "type": "delete",  "text": "隠蔽ブロック (❓)", "icon": "❓", "condition": "b.type === 'hidden'" },
+  { "id": "rule_group",        "type": "approve", "text": "グループ客 (🔗)", "icon": "🔗", "condition": "b.type === 'group'" },
+  { "id": "rule_urgent_attr",  "type": "approve", "text": "🔥 緊急属性", "icon": "🔥", "condition": "b.attribute === 'urgent'" },
+  { "id": "rule_important_attr","type": "approve", "text": "⭐ 重要属性", "icon": "⭐", "condition": "b.attribute === 'important'" },
+  { "id": "rule_caution_attr", "type": "delete",  "text": "⚠️ 要注意属性", "icon": "⚠️", "condition": "b.attribute === 'caution'" },
+  { "id": "rule_odd_urgent",   "type": "delete",  "text": "IDが奇数で、かつ 🔥緊急", "icon": "🔥", "condition": "b.id % 2 !== 0 && b.attribute === 'urgent'" },
+  { "id": "rule_150_important","type": "approve", "text": "ID150以上で、かつ ⭐重要", "icon": "⭐", "condition": "b.id >= 150 && b.attribute === 'important'" }
+]
